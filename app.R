@@ -1,1 +1,61 @@
-library(shiny)\n\n# Define UI\nui <- fluidPage(\n  titlePanel('K-means Clustering Application'),\n  sidebarLayout(\n    sidebarPanel(\n      fileInput('file', 'Upload CSV File:'),\n      uiOutput('varselect'),\n      numericInput('clusters', 'Number of clusters:', 3, min = 1),\n      actionButton('run', 'Run Clustering')\n    ),\n    mainPanel(\n      plotOutput('plot'),\n      textOutput('summary')\n    )\n  )\n)\n\n# Define server logic\nserver <- function(input, output, session) {\n  data <- reactive({\n    req(input$file)\n    read.csv(input$file$datapath)\n  })\n\n  output$varselect <- renderUI({\n    req(data())\n    selectInput('vars', 'Select Variable for Clustering:', choices = names(data()), selected = names(data())[1])\n  })\n\n  observeEvent(input$run, {\n    req(input$vars)\n    set.seed(123)\n    kmeans_result <- kmeans(data()[[input$vars]], centers = input$clusters)\n    output$plot <- renderPlot({\n      # PCA for visualization\n      pca <- prcomp(data()[[input$vars]], scale. = TRUE)\n      plot(pca$x[, 1:2], col = kmeans_result$cluster, pch = 19, xlab = 'PC1', ylab = 'PC2', main = 'PCA-based Clustering Visualization')\n      points(kmeans_result$centers[, 1:2], col = 'red', pch = 8, cex = 2)\n    })\n    output$summary <- renderText({\n      paste('K-means clustering with', input$clusters, 'clusters.')\n    })\n  })\n}\n\n# Run the application\nshinyApp(ui = ui, server = server)
+library(shiny)
+
+ui <- fluidPage(
+  titlePanel("Clustering with PCA"),
+  sidebarLayout(
+    sidebarPanel(
+      checkboxGroupInput("columns", "Select Columns for Clustering:", choices = NULL),
+      actionButton("run", "Run Clustering"),
+      textOutput("validation")
+    ),
+    mainPanel(
+      plotOutput("pcaPlot")
+    )
+  )
+)
+
+server <- function(input, output, session) {
+  dataset <- reactive({
+    # Load your dataset here
+    # For example, use mtcars
+    data <- mtcars
+    return(data)
+  })
+
+  # Update column choices based on the dataset
+  observe({
+    data <- dataset()
+    numeric_cols <- names(data)[sapply(data, is.numeric)]
+    updateCheckboxGroupInput(session, "columns", choices = numeric_cols)
+  })
+
+  output$validation <- renderText({
+    if (length(input$columns) < 2) {
+      return("Please select at least 2 numeric columns.")
+    } else {
+      return("")
+    }
+  })
+
+  output$pcaPlot <- renderPlot({
+    input$run
+    isolate({
+      validate(need(length(input$columns) >= 2, "Please select at least 2 numeric columns."))
+      data <- dataset()
+      data <- na.omit(data[input$columns])  # Drop rows with missing values
+
+      if (nrow(data) == 0) {
+        return(NULL)
+      }
+
+      pca <- prcomp(data, center = TRUE, scale. = TRUE)
+      pca_data <- as.data.frame(pca$x)
+      plot(pca_data[,1:2], col = 'blue', pch = 19,
+           xlab = 'Principal Component 1',
+           ylab = 'Principal Component 2',
+           main = 'PCA Plot')
+    })
+  })
+}
+
+shinyApp(ui, server)
