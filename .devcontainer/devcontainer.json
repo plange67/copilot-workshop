@@ -1,6 +1,6 @@
 {
   "name": "R & Python Oceanography",
-  "image": "rocker/geospatial:latest",
+  "image": "rocker/tidyverse:latest",
   
   "features": {
     "ghcr.io/devcontainers/features/python:1": {
@@ -21,13 +21,13 @@
       ],
       "settings": {
         // This ensures the Python extension uses the right interpreter by default
-        "python.defaultInterpreterPath": "/usr/local/bin/python"
+        "python.defaultInterpreterPath": "/usr/bin/python3.12"
       }
     }
   },
 
   // Combined install for R and Python
-  "postCreateCommand": "Rscript -e 'install.packages(c(\"rerddap\", \"seewave\"))' && pip3 install pandas numpy matplotlib seaborn scikit-learn scipy",
+  "postCreateCommand": "Rscript -e 'install.packages(c(\"rerddap\", \"seewave\"))' && python3 -m pip install pandas numpy matplotlib seaborn scikit-learn scipy",
 
   "forwardPorts": [3838, 4200]
 }
